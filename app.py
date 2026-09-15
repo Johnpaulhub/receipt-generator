@@ -19,7 +19,8 @@ def home():
     if 'user' in session:
         return render_template('admin_dashboard.html', orders=client_orders, current_user=session['user'])
     else:
-        return render_template('public_form.html')
+        
+return render_template('index.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
