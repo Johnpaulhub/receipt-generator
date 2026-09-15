@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Receipt #{{ order.id }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: monospace; background: #fff; padding: 20px; color: #000; }
+        .receipt { max-width: 350px; margin: auto; border: 1px dashed #333; padding: 20px; }
+        h2, h4 { text-align: center; margin: 5px 0; }
+        .details { margin: 15px 0; font-size: 14px; }
+        .details div { margin-bottom: 6px; }
+        .footer { text-align: center; margin-top: 20px; font-size: 12px; }
+        .print-btn { display: block; width: 100%; padding: 10px; background: #000; color: #fff; border: none; margin-top: 15px; cursor: pointer; font-family: Arial; }
+    </style>
+</head>
+<body>
+    <div class="receipt">
+        <h2>CYBER CAFÉ PORTAL</h2>
+        <h4>Official Service Receipt</h4>
+        <hr style="border: 0.5px dashed #333;">
+        <div class="details">
+            <div><b>Receipt No:</b> #00{{ order.id }}</div>
+            <div><b>Client Name:</b> {{ order.client_name }}</div>
+            <div><b>Phone:</b> {{ order.phone }}</div>
+            <div><b>Service Rendered:</b> {{ order.service }}</div>
+            <div><b>M-Pesa Code:</b> {{ order.mpesa_code }}</div>
+        </div>
+        <hr style="border: 0.5px dashed #333;">
+        <div class="footer">
+            <p>Thank you for your business!</p>
+        </div>
+        <button class="print-btn" onclick="window.print()">Print / Save Receipt</button>
+    </div>
+</body>
+</html>
