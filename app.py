@@ -24,9 +24,10 @@ USER_DATA = {'admin': '1234'}
 
 @app.route('/')
 def home():
-  if 'username' not in session:
-    return redirect(url_for('login'))
-  return render_template('index.html', user=session['username'])
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    return render_template('index.html', username=session.get('username'))
+
 
 
 @app.route('/login', methods=['GET', 'POST'])
