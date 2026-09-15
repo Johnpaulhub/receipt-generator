@@ -1,151 +1,95 @@
-import io
-import random
-from flask import (
-    Flask,
-    flash,
-    redirect,
-    render_template,
-    request,
-    send_file,
-    session,
-    url_for,
-)
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from flask import Flask, render_template, request, redirect, url_for, session
 
 app = Flask(__name__)
-app.secret_key = 'supersecretkey'  # Needed for session management
+app.secret_key = 'supersecretkey'
 
-# Demo user credentials
-USER_DATA = {'admin': '1234'}
+# Admin credentials supporting username, email, or phone number
+ADMIN_CREDENTIALS = {
+    'username': 'admin',
+    'email': 'admin@cyber.com',
+    'phone': '0712345678',
+    'password': '1234'
+}
 
+# In-memory storage for client orders
+client_orders = []
 
 @app.route('/')
 def home():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    return render_template('index.html', username=session.get('username'))
-
-
+    if 'user' in session:
+        return render_template('admin_dashboard.html', orders=client_orders, current_user=session['user'])
+    else:
+        return render_template('public_form.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-  error = None
-  if request.method == 'POST':
-    username = request.form.get('username')
-    password = request.form.get('password')
+    error = None
+    if request.method == 'POST':
+        login_identifier = request.form.get('identifier').strip()
+        password = request.form.get('password')
+        
+        if (login_identifier == ADMIN_CREDENTIALS['username'] or 
+            login_identifier == ADMIN_CREDENTIALS['email'] or 
+            login_identifier == ADMIN_CREDENTIALS['phone']):
+            
+            if password == ADMIN_CREDENTIALS['password']:
+                session['user'] = login_identifier
+                return redirect(url_for('home'))
+            else:
+                error = 'Incorrect Password!'
+        else:
+            error = 'Identifier (Username/Email/Phone) not recognized!'
+            
+    return render_template('login.html', error=error)
 
-    if username in USER_DATA and USER_DATA[username] == password:
-      session['username'] = username
-      return redirect(url_for('home'))
+@app.route('/submit_order', methods=['POST'])
+def submit_order():
+    client_name = request.form.get('client_name')
+    phone = request.form.get('phone')
+    service = request.form.get('service')
+    mpesa_code = request.form.get('mpesa_code')
+    
+    order_id = len(client_orders) + 1
+    
+    order_details = {
+        'id': order_id,
+        'client_name': client_name,
+        'phone': phone,
+        'service': service,
+        'mpesa_code': mpesa_code.upper()
+    }
+    client_orders.append(order_details)
+    return render_template('order_success.html', client_name=client_name)
+
+@app.route('/receipt/<int:order_id>')
+def view_receipt(order_id):
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    
+    order = next((o for o in client_orders if o['id'] == order_id), None)
+    if not order:
+        return "Receipt not found", 404
+        
+    return render_template('receipt.html', order=order)
+
+@app.route('/change_password', methods=['POST'])
+def change_password():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+        
+    current_pass = request.form.get('current_password')
+    new_pass = request.form.get('new_password')
+    
+    if current_pass == ADMIN_CREDENTIALS['password']:
+        ADMIN_CREDENTIALS['password'] = new_pass
+        return redirect(url_for('home'))
     else:
-      error = 'Invalid Username or Password!'
-
-  return render_template('login.html', error=error)
-
+        return "Current password incorrect!", 400
 
 @app.route('/logout')
 def logout():
-  session.pop('username', None)
-  return redirect(url_for('login'))
-
-
-@app.route('/generate', methods=['POST'])
-def generate():
-  if 'username' not in session:
+    session.pop('user', None)
     return redirect(url_for('login'))
-
-  business_name = request.form.get('business_name')
-  phone = request.form.get('phone')
-  customer = request.form.get('customer')
-  item = request.form.get('item')
-  price = request.form.get('price')
-  quantity = request.form.get('quantity')
-
-  try:
-    total = float(price) * int(quantity)
-  except ValueError:
-    total = 0.0
-
-  receipt_data = {
-      'business_name': business_name,
-      'phone': phone,
-      'customer': customer,
-      'item': item,
-      'price': price,
-      'quantity': quantity,
-      'total': f'{total:,.2f}',
-  }
-
-  return render_template(
-      'index.html', receipt=receipt_data, user=session['username']
-  )
-
-
-@app.route('/download', methods=['POST'])
-def download_pdf():
-  if 'username' not in session:
-    return redirect(url_for('login'))
-
-  business_name = request.form.get('business_name')
-  phone = request.form.get('phone')
-  customer = request.form.get('customer')
-  item = request.form.get('item')
-  price = request.form.get('price')
-  quantity = request.form.get('quantity')
-
-  try:
-    total = float(price) * int(quantity)
-  except ValueError:
-    total = 0.0
-
-  receipt_no = f'REC-{random.randint(1000, 9999)}'
-
-  buffer = io.BytesIO()
-  doc = SimpleDocTemplate(buffer, pagesize=letter)
-  styles = getSampleStyleSheet()
-  story = []
-
-  story.append(Paragraph(f'<b>{business_name.upper()}</b>', styles['Title']))
-  story.append(Paragraph(f'Phone: {phone}', styles['Normal']))
-  story.append(Paragraph(f'Receipt No: {receipt_no}', styles['Normal']))
-  story.append(Paragraph(f'Customer: {customer}', styles['Normal']))
-  story.append(Spacer(1, 15))
-
-  data = [
-      ['Item Description', 'Qty', 'Unit Price', 'Total Amount'],
-      [item, quantity, f'KSh {float(price):,.2f}', f'KSh {total:,.2f}'],
-  ]
-
-  table = Table(data, colWidths=[200, 50, 100, 100])
-  table.setStyle(
-      TableStyle([
-          ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-          ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-          ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-          ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-          ('GRID', (0, 0), (-1, -1), 1, colors.black),
-      ])
-  )
-
-  story.append(table)
-  story.append(Spacer(1, 20))
-  story.append(
-      Paragraph('<b>Thank you for your business!</b>', styles['Normal'])
-  )
-
-  doc.build(story)
-  buffer.seek(0)
-
-  return send_file(
-      buffer,
-      as_attachment=True,
-      download_name=f'Receipt_{receipt_no}.pdf',
-      mimetype='application/pdf',
-  )
-
 
 if __name__ == '__main__':
-  app.run(debug=True, host='127.0.0.1', port=5000)
+    app.run(debug=True)
