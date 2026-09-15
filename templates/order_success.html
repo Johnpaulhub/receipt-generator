@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Request Submitted</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f9; padding: 40px; text-align: center; }
+        .box { max-width: 400px; background: #fff; padding: 30px; border-radius: 8px; margin: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        a { color: #007BFF; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2 style="color: #28a745;">Success!</h2>
+        <p>Thank you, <b>{{ client_name }}</b>. Your service request and M-Pesa code have been logged successfully.</p>
+        <p>The admin will process your request shortly.</p>
+        <br>
+        <a href="/">Submit Another Request</a>
+    </div>
+</body>
+</html>
