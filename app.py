@@ -1,39 +1,3 @@
-from flask import Flask, render_template, request, redirect, url_for, session
-
-app = Flask(__name__)
-app.secret_key = 'supersecretkey'
-
-# Admin credentials supporting username, email, or phone number
-ADMIN_CREDENTIALS = {
-    'username': 'admin',
-    'email': 'admin@cyber.com',
-    'phone': '0712345678',
-    'password': '1234'
-}
-
-# In-memory storage for client orders
-client_orders = []
-
-@app.route('/')
-def home():
-    if 'user' in session:
-        return render_template('admin_dashboard.html', orders=client_orders, current_user=session['user'])
-    else:
-        
-return render_template('index.html')
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    error = None
-    if request.method == 'POST':
-        login_identifier = request.form.get('identifier').strip()
-        password = request.form.get('password')
-        
-        if (login_identifier == ADMIN_CREDENTIALS['username'] or 
-            login_identifier == ADMIN_CREDENTIALS['email'] or 
-            login_identifier == ADMIN_CREDENTIALS['phone']):
-            
-            if password == ADMIN_CREDENTIALS['password']:
                 session['user'] = login_identifier
                 return redirect(url_for('home'))
             else:
